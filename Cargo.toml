@@ -1,0 +1,3 @@
+[workspace]
+resolver = "3"
+members = ["mwave-fm1-utils"]

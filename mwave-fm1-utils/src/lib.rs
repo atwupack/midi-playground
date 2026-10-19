@@ -1,4 +1,7 @@
 pub mod fx;
+pub mod presets;
+mod conn;
+mod error;
 
 use crate::fx::{Effect, EffectParameter};
 use midir::{MidiInput, MidiInputConnection, MidiOutput, MidiOutputConnection};
@@ -10,16 +13,9 @@ use log::debug;
 use wmidi::Channel::{Ch1, Ch2};
 use wmidi::MidiMessage::{ControlChange, NoteOff, NoteOn, ProgramChange};
 use wmidi::{MidiMessage, Note, ProgramNumber, U7, Velocity};
-#[derive(Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Debug)]
-pub struct FM1Error(String);
-
-impl Display for FM1Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl Error for FM1Error {}
+use midi_lib::send_midi_message;
+use crate::conn::connect_out;
+use crate::error::{convert_error, FM1Error};
 
 pub struct FM1Player {
     fm1_out_conn: MidiOutputConnection,
@@ -28,20 +24,11 @@ pub struct FM1Player {
 
 impl FM1Player {
 
-    const FM1_NAME: &'static str = "FM-1";
+
 
     pub fn new() -> Result<Self, Box<dyn Error>>
     {
-        let midi_out = MidiOutput::new("My Test Output")?;
-        let out_ports = midi_out.ports();
-        let fm1_out_conn = out_ports
-            .iter()
-            .find(|port| midi_out.port_name(port).unwrap().starts_with("FM-1"))
-            .map(|port| {
-                return midi_out.connect(port, "FM-1").unwrap();
-            })
-            .ok_or("")?;
-        debug!("FM-1 MIDI output connected");
+        let fm1_out_conn = connect_out()?;
 
         let midi_in = MidiInput::new("My Test Input")?;
         let in_ports = midi_in.ports();
@@ -60,18 +47,6 @@ impl FM1Player {
         Ok(FM1Player { fm1_out_conn, fm1_in_conn })
     }
 
-    fn connect_out() -> Result<MidiOutputConnection, FM1Error> {
-        let midi_out = MidiOutput::new("FM-1 client").map_err(convert_error)?;
-        let fm1_out_conn = midi_out.ports()
-            .iter()
-            .find(|port| midi_out.port_name(port).unwrap().starts_with(Self::FM1_NAME))
-            .map(|port| {
-                return midi_out.connect(port, Self::FM1_NAME).unwrap();
-            }).ok_or(FM1Error("".to_string()))?;
-        debug!("FM-1 MIDI output connected");
-
-        Ok(fm1_out_conn)
-    }
 
     pub fn change_voice(&mut self, voice: u8) -> Result<(), FM1Error> {
         self.send_message(ProgramChange(Ch1, ProgramNumber::from_u8_lossy(voice)))
@@ -119,14 +94,8 @@ impl FM1Player {
     }
 
     fn send_message(&mut self, message: MidiMessage) -> Result<(), FM1Error> {
-        self.fm1_out_conn
-            .send(&message.to_vec())
-            .map_err(convert_error)?;
-        debug!("Sent message: {:?}", message);
+        send_midi_message(&mut self.fm1_out_conn, &message).map_err(convert_error)?;
         Ok(())
     }
 }
 
-fn convert_error(e: impl Error) -> FM1Error {
-    FM1Error(e.to_string())
-}

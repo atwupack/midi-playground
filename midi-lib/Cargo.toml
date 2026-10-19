@@ -1,0 +1,10 @@
+[package]
+name = "midi-lib"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+nusb = "0.2"
+midir.workspace = true
+wmidi.workspace = true
+log.workspace = true

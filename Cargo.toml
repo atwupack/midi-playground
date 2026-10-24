@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["midi-lib","mwave-fm1-utils"]
+members = ["midi-lib", "midi-util","mwave-fm1-utils"]
 
 [workspace.dependencies]
 midir = "0.11"

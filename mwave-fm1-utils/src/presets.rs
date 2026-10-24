@@ -1,11 +1,11 @@
 use crate::conn::connect_out;
+use midi_lib::output::MidiOutputConnectionEx;
 use midir::MidiOutputConnection;
 use std::error::Error;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 use wmidi::MidiMessage;
-use midi_lib::send_midi_message;
 
 pub struct FM1Presets {
     fm1_out_conn: MidiOutputConnection,
@@ -23,7 +23,7 @@ impl FM1Presets {
         let mut data = Vec::new();
         file.read_to_end(&mut data)?;
         let message = MidiMessage::from_bytes(&data)?;
-        send_midi_message(&mut self.fm1_out_conn, &message)?;
+        self.fm1_out_conn.send_midi_msg(&message)?;
         Ok(())
     }
 }

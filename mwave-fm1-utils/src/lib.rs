@@ -3,19 +3,19 @@ pub mod presets;
 mod conn;
 mod error;
 
+use crate::conn::connect_out;
+use crate::error::{FM1Error, convert_error};
 use crate::fx::{Effect, EffectParameter};
+use log::debug;
+use midi_lib::input::MidiInputEx;
+use midi_lib::output::MidiOutputConnectionEx;
 use midir::{MidiInput, MidiInputConnection, MidiOutput, MidiOutputConnection};
 use std::error::Error;
-use std::fmt::Display;
 use std::thread::sleep;
 use std::time::Duration;
-use log::debug;
 use wmidi::Channel::{Ch1, Ch2};
 use wmidi::MidiMessage::{ControlChange, NoteOff, NoteOn, ProgramChange};
 use wmidi::{MidiMessage, Note, ProgramNumber, U7, Velocity};
-use midi_lib::send_midi_message;
-use crate::conn::connect_out;
-use crate::error::{convert_error, FM1Error};
 
 pub struct FM1Player {
     fm1_out_conn: MidiOutputConnection,
@@ -36,8 +36,7 @@ impl FM1Player {
             .iter()
             .find(|port| midi_in.port_name(port).unwrap().starts_with("FM-1"))
             .map(|port| {
-                return midi_in.connect(port, "FM-1", |time, data, _| {
-                    let msg = MidiMessage::from_bytes(data);
+                return midi_in.connect_midi(port, "FM-1", |time, msg, _| {
                     println!("Received MIDI message: {:?} at time: {:?}", msg, time);
                 }, ()).unwrap();
             })
@@ -94,7 +93,7 @@ impl FM1Player {
     }
 
     fn send_message(&mut self, message: MidiMessage) -> Result<(), FM1Error> {
-        send_midi_message(&mut self.fm1_out_conn, &message).map_err(convert_error)?;
+        self.fm1_out_conn.send_midi_msg(&message).map_err(convert_error)?;
         Ok(())
     }
 }

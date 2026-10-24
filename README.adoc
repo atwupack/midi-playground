@@ -1,0 +1,50 @@
+= MIDI Playground
+
+A Rust workspace for experimenting with MIDI device discovery, MIDI input/output, and utilities for the Yamaha MWAVE FM-1 synthesizer. The workspace uses Rust 2024 edition.
+
+== Workspace crates
+
+* `midi-lib` — shared MIDI helpers: lists USB devices and MIDI output ports, converts incoming bytes to typed MIDI messages, and sends typed MIDI messages.
+* `midi-util` — a small command-line utility scaffold. Its `listen` command is currently a placeholder.
+* `mwave-fm1-utils` — FM-1 helpers for playing notes, changing voices, controlling effects, and sending preset SysEx data.
+
+== Requirements
+
+* A stable Rust toolchain that supports edition 2024.
+* For Linux builds, ALSA development headers. On Ubuntu, install them with:
++
+[source,shell]
+----
+sudo apt-get update
+sudo apt-get install --yes libasound2-dev
+----
+
+* A connected and accessible MIDI device for the hardware-dependent examples. FM-1 examples expect the device's MIDI ports to be named with the `FM-1` prefix.
+
+== Build and test
+
+Run these commands from the workspace root:
+
+[source,shell]
+----
+cargo build --workspace
+cargo test --workspace
+----
+
+== Examples
+
+List detected USB devices and MIDI output ports:
+
+[source,shell]
+----
+cargo run -p midi-lib --example find_device
+----
+
+Play notes and control effects on a connected FM-1:
+
+[source,shell]
+----
+cargo run -p mwave-fm1-utils --example fm1_simple_play
+----
+
+Other FM-1 examples include `fm1_simple_read` and `upload_preset`; they also require a compatible device. The preset upload example uses a SysEx file under `mwave-fm1-utils/data/`.
